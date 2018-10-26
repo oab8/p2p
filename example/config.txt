@@ -1,0 +1,52 @@
+# PEERSIM CONFIG
+SIZE 10000
+
+CYCLE 1000
+CYCLES 300
+
+MINDELAY 100
+MAXDELAY 600
+
+random.seed 1234567890
+network.size SIZE
+simulation.endtime CYCLE*CYCLE
+simulation.logtime CYCLE
+
+protocol.tr UniformRandomTransport
+{
+mindelay (CYCLE*MINDELAY) /100
+maxdelay (CYCLE*MAXDELAY) /100
+}
+
+protocol.gossip example.gossip.BasicShuffle
+{
+cacheSize 30
+shuffleLength 8
+step CYCLE
+transport tr
+period CYCLE
+}
+
+init.wire WireStar
+{
+protocol gossip
+}
+
+init.sch CDScheduler
+{
+protocol gossip
+}
+control.degree example.reports.InDegreeObserver
+{
+protocol gossip
+step CYCLE
+starttime 299000
+endtime 300000
+}
+control.graphPL GraphStats
+{
+protocol gossip
+step CYCLE
+undir true
+nl 10
+}
