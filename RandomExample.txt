@@ -1,0 +1,42 @@
+# This script builds a randomly connected graph and prints in-degree 
+# distribution, path length and clustering coefficient information.
+# Basically it produces the data used as baseline.
+
+SIZE 10000
+
+CYCLE 1000
+CYCLES 300
+
+random.seed 1234567890
+network.size SIZE
+simulation.endtime CYCLE*CYCLES
+simulation.logtime CYCLE
+
+
+protocol.gossip IdleProtocol
+{
+}
+
+init.wire WireKOut
+{
+	protocol gossip
+	k 30
+}
+
+control.degree example.reports.InDegreeObserver
+{
+	protocol gossip
+
+	step CYCLE
+	starttime 299000
+	endtime 300000
+}
+
+control.graphPL GraphStats
+{
+	protocol gossip
+	step CYCLE
+	undir true
+	#nl 10
+	nc 1000
+}
