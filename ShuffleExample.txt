@@ -43,7 +43,7 @@ init.wire WireStar
 #init.wire WireRingLattice
 #{
 #	protocol gossip
-#	k 1
+#	k CACHESIZE
 #}
 
 init.sch CDScheduler
@@ -69,5 +69,4 @@ control.graphPL GraphStatsPrinter
 	#nl 10
 	# uncomment the next line to produce clustering information
 	nc 1000
-	cacheSize CACHESIZE
 }

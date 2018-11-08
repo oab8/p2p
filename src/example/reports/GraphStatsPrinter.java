@@ -1,14 +1,10 @@
 	package example.reports;
 
 	import java.io.BufferedWriter;
-import java.io.File;
-import java.io.FileNotFoundException;
-import java.io.FileWriter;
-import java.io.IOException;
-import java.io.PrintWriter;
-import java.io.UnsupportedEncodingException;
-
-import peersim.config.Configuration;
+	import java.io.File;
+	import java.io.FileWriter;
+	import java.io.IOException;
+	import peersim.config.Configuration;
 	import peersim.graph.GraphAlgorithms;
 	import peersim.reports.GraphObserver;
 	import peersim.util.IncrementalStats;
@@ -25,10 +21,7 @@ import peersim.config.Configuration;
 	private final int nl;
 		
 	private static final String OUTPUT_LOCATION = "src/output.txt";
-	//private PrintWriter writer;
-	
-	//private static final String PAR_CACHESIZE = "cacheSize";
-	//private static int cacheSize;
+
 	private static int i = 0;
 	
 	BufferedWriter writer;
@@ -65,17 +58,19 @@ import peersim.config.Configuration;
 			{
 				stats.add(GraphAlgorithms.clustering(g,i));
 			}
+			
 			double avg=stats.getAverage();
 			//System.out.println(avg+" ");
 			
 			try {
 				writer.append(i + "\t" + avg+ "\n");
+				i++;
 			} catch (IOException e) {
 				// TODO Auto-generated catch block
 				e.printStackTrace();
 			}
 			
-			i++;
+			
 		}
 		
 		if( nl != 0 )
@@ -103,12 +98,11 @@ import peersim.config.Configuration;
 			
 			try {
 				writer.append(i + "\t" + avg+ "\n");
+				i++;
 			} catch (IOException e) {
 				// TODO Auto-generated catch block
 				e.printStackTrace();
 			}
-			
-			i++;
 		}
 		
 		//System.out.println();

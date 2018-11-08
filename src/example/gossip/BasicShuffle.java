@@ -46,7 +46,7 @@ public class BasicShuffle  implements Linkable, EDProtocol, CDProtocol{
 
 	private final int tid;
 
-	// The list of neighbors known by this node, or the cache.
+	// The list of neighbours known by this node, or the cache.
 	private List<Entry> cache;
 	
 	// The maximum size of the cache;
@@ -55,9 +55,10 @@ public class BasicShuffle  implements Linkable, EDProtocol, CDProtocol{
 	// The maximum length of the shuffle exchange;
 	private final int l;
 	
+	// Variable blocking new shuffle requests until an earlier has finished.
 	private boolean awaitResponse;
-	
-	private boolean nodeRemoved;
+
+
 	/**
 	 * Constructor that initializes the relevant simulation parameters and
 	 * other class variables.
@@ -73,11 +74,9 @@ public class BasicShuffle  implements Linkable, EDProtocol, CDProtocol{
 		cache = new ArrayList<Entry>(size);
 		
 		awaitResponse = false;
-		nodeRemoved = false;
 	}
 
-	/* START YOUR IMPLEMENTATION FROM HERE
-	 * 
+	/* 
 	 * The simulator engine calls the method nextCycle once every cycle 
 	 * (specified in time units in the simulation script) for all the nodes.
 	 * 
@@ -95,34 +94,27 @@ public class BasicShuffle  implements Linkable, EDProtocol, CDProtocol{
 		// 2. If P's cache is empty, return;	
 		if (cache.isEmpty()) return;
 		
-		// 3. Select a random neighbor (named Q) from P's cache to initiate the shuffling;
+		// 3. Select a random neighbour (named Q) from P's cache to initiate the shuffling;
 		int randomNumber = CommonState.r.nextInt(cache.size());
 		Entry q = cache.get(randomNumber);
 		
 		// 4. If P's cache is full, remove Q from the cache;
-		if (cache.size() == size) {
+		if (cache.size() >= size) {
 			cache.remove(q);
 		}
 		
-		// 5. Select a subset of other l - 1 random neighbors from P's cache;
+		// 5. Select a subset of other l - 1 random neighbours from P's cache;
 		//	  - l is the length of the shuffle exchange
 		//    - Do not add Q to this subset	
-		List<Entry> subset = new ArrayList<Entry>();
-		
-		List<Entry> cacheCopy = new ArrayList<Entry>();
-		cacheCopy.addAll(cache);
+		List<Entry> subset = new ArrayList<Entry>(l);	
+		List<Entry> cacheCopy = new ArrayList<Entry>(cache);
 		cacheCopy.remove(q);
 			
-		for (int i =1; i < l-1 && !cacheCopy.isEmpty(); i++) {
+		for (int i =0; i < l-1 && !cacheCopy.isEmpty(); i++) {
 				randomNumber = CommonState.r.nextInt(cacheCopy.size());
 				Entry neighbour = cacheCopy.get(randomNumber);
 				cacheCopy.remove(randomNumber);
-				
-				// updates the neighbour so that it sends to new node, q 
-				neighbour.setSentTo(q.getNode());
-				
-				// adds the neighbour to the q's subset
-				subset.add(new Entry(neighbour.getNode()));
+				subset.add(neighbour);
 		}
 		
 		// 6. Add P to the subset;
@@ -134,20 +126,12 @@ public class BasicShuffle  implements Linkable, EDProtocol, CDProtocol{
 		Transport tr = (Transport) node.getProtocol(tid);
 		tr.send(node, q.getNode(), message, protocolID);
 		
-		//
 		// 8. From this point on P is waiting for Q's response and will not initiate a new shuffle operation;
 		awaitResponse = true;
 		
 		// The response from Q will be handled by the method processEvent.
 		
 	}
-/*	
-	private void sendMessage(Node srcNode, Node destNode, List<Entry> subset, MessageType type, int protocolID) {
-		GossipMessage message = new GossipMessage(srcNode, subset);
-		message.setType(type);
-		Transport tr = (Transport) srcNode.getProtocol(tid);
-		tr.send(srcNode, destNode, message, protocolID);
-	}*/
 
 	/* The simulator engine calls the method processEvent at the specific time unit that an event occurs in the simulation.
 	 * It is not called periodically as the nextCycle method.
@@ -158,43 +142,7 @@ public class BasicShuffle  implements Linkable, EDProtocol, CDProtocol{
 	 */
 	@Override
 	public void processEvent(Node node, int pid, Object event) {
-	/*	// Let's name this node as Q;
-		// Q receives a message from P;
-		//	  - Cast the event object to a message:
-		GossipMessage message = (GossipMessage) event;
-		
-		switch (message.getType()) {
-		// If the message is a shuffle request:
-		case SHUFFLE_REQUEST:
-		//	  1. If Q is waiting for a response from a shuffling initiated in a previous cycle, send back to P a message rejecting the shuffle request; 
-		//	  2. Q selects a random subset of size l of its own neighbors; 
-		//	  3. Q reply P's shuffle request by sending back its own subset;
-		//	  4. Q updates its cache to include the neighbors sent by P:
-		//		 - No neighbor appears twice in the cache
-		//		 - Use empty cache slots to add the new entries
-		//		 - If the cache is full, you can replace entries among the ones sent to P with the new ones
-			break;
-		
-		// If the message is a shuffle reply:
-		case SHUFFLE_REPLY:
-		//	  1. In this case Q initiated a shuffle with P and is receiving a response containing a subset of P's neighbors
-		//	  2. Q updates its cache to include the neighbors sent by P:
-		//		 - No neighbor appears twice in the cache
-		//		 - Use empty cache slots to add new entries
-		//		 - If the cache is full, you can replace entries among the ones originally sent to P with the new ones
-		//	  3. Q is no longer waiting for a shuffle reply;	 
-			break;
-		
-		// If the message is a shuffle rejection:
-		case SHUFFLE_REJECTED:
-		//	  1. If P was originally removed from Q's cache, add it again to the cache.
-		//	  2. Q is no longer waiting for a shuffle reply;
-			break;
-			
-		default:
-			break;
-		}
-		*/
+
 		// Let's name this node as Q;
 				// Q receives a message from P;
 				//	  - Cast the event object to a message:
@@ -213,21 +161,18 @@ public class BasicShuffle  implements Linkable, EDProtocol, CDProtocol{
 						reply.setType(MessageType.SHUFFLE_REJECTED);
 						Transport tr = (Transport) node.getProtocol(tid);
 						tr.send(node, p, reply, pid);
-						return;
+						break;
 					}
 					
-				//	  2. Q selects a random subset of size l of its own neighbors;
-					List<Entry> subset = new ArrayList<Entry>();
+				//	  2. Q selects a random subset of size l of its own neighbours;
+					List<Entry> subset = new ArrayList<Entry>(l);
 					
-					cacheCopy = new ArrayList<Entry>(cache);
-					cacheCopy.remove(new Entry(p));
+					cacheCopy = new ArrayList<Entry>(cache);	
 					
-					for (int i = 0; i < l && !cacheCopy.isEmpty(); ++i) {
-						int randomNumber = CommonState.r.nextInt(cacheCopy.size());
-						
+					for (int i = 0; i < l-1 && !cacheCopy.isEmpty(); i++) {
+						int randomNumber = CommonState.r.nextInt(cacheCopy.size());		
 						Entry neighbour = cacheCopy.remove(randomNumber);
-						neighbour.setSentTo(p);
-						subset.add(new Entry(neighbour.getNode()));
+						subset.add(neighbour);
 					}
 					
 				//	  3. Q reply P's shuffle request by sending back its own subset;
@@ -236,43 +181,19 @@ public class BasicShuffle  implements Linkable, EDProtocol, CDProtocol{
 					Transport tr = (Transport) node.getProtocol(tid);
 					tr.send(node, p, reply, pid);
 					
-				//	  4. Q updates its cache to include the neighbors sent by P:
-				//		 - No neighbor appears twice in the cache
+				//	  4. Q updates its cache to include the neighbours sent by P:
+				//		 - No neighbour appears twice in the cache
 				//		 - Use empty cache slots to add the new entries
 				//		 - If the cache is full, you can replace entries among the ones sent to P with the new ones
-					Queue<Integer> replacableIndices = new LinkedList<Integer>();
-					List<Entry> cacheCopy1 = new ArrayList<Entry>();
-				
-					ListIterator<Entry> it = cache.listIterator();
-					while (it.hasNext()) {
-						Entry qNeighbour = it.next();
-				
-						cacheCopy1.add(qNeighbour);
-						
-						Node sentTo = qNeighbour.getSentTo();
-						if (sentTo != null && p.getID() == sentTo.getID()) {
-							replacableIndices.add(it.nextIndex() - 1);
-						}
-					}
-				
-					for (Entry neighbour : message.getShuffleList()) {
-						boolean alreadyInCache = cacheCopy1.remove(neighbour);
-				
-						if (!alreadyInCache) {
-							if (cache.size() < size) {
-								cache.add(neighbour);
-							} else if (!replacableIndices.isEmpty()) {
-								cache.set(replacableIndices.poll(), neighbour);
-							}
-						}
-					}
+					updateCache(p, message.getShuffleList());
+					
 					break;
-				
+					
 				// If the message is a shuffle reply:
 				case SHUFFLE_REPLY:
-				//	  1. In this case Q initiated a shuffle with P and is receiving a response containing a subset of P's neighbors
-				//	  2. Q updates its cache to include the neighbors sent by P:
-				//		 - No neighbor appears twice in the cache
+				//	  1. In this case Q initiated a shuffle with P and is receiving a response containing a subset of P's neighbours
+				//	  2. Q updates its cache to include the neighbours sent by P:
+				//		 - No neighbour appears twice in the cache
 				//		 - Use empty cache slots to add new entries
 				//		 - If the cache is full, you can replace entries among the ones originally sent to P with the new ones
 					updateCache(p, message.getShuffleList());
@@ -280,27 +201,20 @@ public class BasicShuffle  implements Linkable, EDProtocol, CDProtocol{
 				//	  3. Q is no longer waiting for a shuffle reply;
 					awaitResponse = false;
 					
-					nodeRemoved = false;
-					
-					for (Entry entry : cache) {
-						entry.setSentTo(null);
-					}
 					break;
 				
 				// If the message is a shuffle rejection:
 				case SHUFFLE_REJECTED:
-					/*for (Entry entry : cache) {
-						entry.setSentTo(null);
-					}*/
 					
 				//	  1. If P was originally removed from Q's cache, add it again to the cache.
-					if(nodeRemoved) {
-						cache.add(new Entry(p));
-						nodeRemoved = false;
+					Entry entry = new Entry(p);
+					if (!cache.contains(entry)) {
+						cache.add(entry);
 					}
-					
+
 				//	  2. Q is no longer waiting for a shuffle reply;
 					awaitResponse = false;
+					
 					break;
 				
 				default:
@@ -309,30 +223,26 @@ public class BasicShuffle  implements Linkable, EDProtocol, CDProtocol{
 		
 	}
 
-	private void updateCache(Node source, List<Entry> neighbours) {
-		Queue<Integer> replacableIndices = new LinkedList<Integer>();
-		List<Entry> cacheCopy = new ArrayList<Entry>();
-	
+	private void updateCache(Node node, List<Entry> neighbours) {
+		
+		List<Integer> toReplaceIndex = new ArrayList<Integer>();
 		ListIterator<Entry> it = cache.listIterator();
+		
 		while (it.hasNext()) {
-			Entry q_neighbour = it.next();
-	
-			cacheCopy.add(q_neighbour);
+			Entry neighbour = it.next();
 			
-			Node sentTo = q_neighbour.getSentTo();
-			if (sentTo != null && source.getID() == sentTo.getID()) {
-				replacableIndices.add(it.nextIndex() - 1);
+			Node sentTo = neighbour.getSentTo();
+			if (sentTo != null && sentTo.equals(node)) {
+				toReplaceIndex.add(it.nextIndex() - 1);
 			}
 		}
-	
+		
 		for (Entry neighbour : neighbours) {
-			boolean alreadyInCache = cacheCopy.remove(neighbour);
-	
-			if (!alreadyInCache) {
+			if (!cache.contains(neighbour) && neighbour.getSentTo()!=node) {
 				if (cache.size() < size) {
 					cache.add(neighbour);
-				} else if (!replacableIndices.isEmpty()) {
-					cache.set(replacableIndices.poll(), neighbour);
+				} else if (!toReplaceIndex.isEmpty()) {
+					cache.set(toReplaceIndex.remove(0), neighbour);
 				}
 			}
 		}
