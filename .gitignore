@@ -3,4 +3,4 @@ bin/
 /.settings
 .project
 .classpath
-.jar
+*.jar
