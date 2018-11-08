@@ -113,7 +113,10 @@ public class BasicShuffle  implements Linkable, EDProtocol, CDProtocol{
 		for (int i =0; i < l-1 && !cacheCopy.isEmpty(); i++) {
 				randomNumber = CommonState.r.nextInt(cacheCopy.size());
 				Entry neighbour = cacheCopy.get(randomNumber);
-				cacheCopy.remove(randomNumber);
+				cacheCopy.remove(randomNumber);				
+				
+				neighbour.setSentTo(q.getNode());			
+				
 				subset.add(neighbour);
 		}
 		
@@ -148,7 +151,6 @@ public class BasicShuffle  implements Linkable, EDProtocol, CDProtocol{
 				//	  - Cast the event object to a message:
 				GossipMessage message = (GossipMessage) event;
 				Node p = message.getNode();
-				
 				List<Entry> cacheCopy;
 				
 				switch (message.getType()) {
@@ -161,7 +163,7 @@ public class BasicShuffle  implements Linkable, EDProtocol, CDProtocol{
 						reply.setType(MessageType.SHUFFLE_REJECTED);
 						Transport tr = (Transport) node.getProtocol(tid);
 						tr.send(node, p, reply, pid);
-						break;
+						return;
 					}
 					
 				//	  2. Q selects a random subset of size l of its own neighbours;
@@ -172,6 +174,9 @@ public class BasicShuffle  implements Linkable, EDProtocol, CDProtocol{
 					for (int i = 0; i < l-1 && !cacheCopy.isEmpty(); i++) {
 						int randomNumber = CommonState.r.nextInt(cacheCopy.size());		
 						Entry neighbour = cacheCopy.remove(randomNumber);
+						
+						neighbour.setSentTo(p);
+						
 						subset.add(neighbour);
 					}
 					

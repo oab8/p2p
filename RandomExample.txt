@@ -7,7 +7,7 @@ SIZE 10000
 CYCLE 1000
 CYCLES 300
 
-CACHESIZE 50
+CACHESIZE 30
 
 random.seed 1234567890
 network.size SIZE
@@ -19,25 +19,16 @@ protocol.gossip IdleProtocol
 {
 }
 
-#init.wire WireKOut
-#{
-#	protocol gossip
-#	k CACHESIZE
-#}
-
-init.wire WireStar
+init.wire WireKOut
 {
 	protocol gossip
+	k CACHESIZE
 }
 
-# This initializes the topology as a ring. Use should also use WireStar to
-# initialize it as a star.
-#init.wire WireRingLattice
+#init.wire WireStar
 #{
 #	protocol gossip
-#	k CACHESIZE
 #}
-
 
 control.degree example.reports.InDegreeObserver
 {
