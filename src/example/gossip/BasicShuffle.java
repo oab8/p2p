@@ -113,10 +113,8 @@ public class BasicShuffle  implements Linkable, EDProtocol, CDProtocol{
 		for (int i =0; i < l-1 && !cacheCopy.isEmpty(); i++) {
 				randomNumber = CommonState.r.nextInt(cacheCopy.size());
 				Entry neighbour = cacheCopy.get(randomNumber);
-				cacheCopy.remove(randomNumber);				
-				
-				neighbour.setSentTo(q.getNode());			
-				
+				cacheCopy.remove(randomNumber);
+				neighbour.setSentTo(q.getNode());
 				subset.add(neighbour);
 		}
 		
@@ -151,6 +149,7 @@ public class BasicShuffle  implements Linkable, EDProtocol, CDProtocol{
 				//	  - Cast the event object to a message:
 				GossipMessage message = (GossipMessage) event;
 				Node p = message.getNode();
+				
 				List<Entry> cacheCopy;
 				
 				switch (message.getType()) {
@@ -163,7 +162,7 @@ public class BasicShuffle  implements Linkable, EDProtocol, CDProtocol{
 						reply.setType(MessageType.SHUFFLE_REJECTED);
 						Transport tr = (Transport) node.getProtocol(tid);
 						tr.send(node, p, reply, pid);
-						return;
+						break;
 					}
 					
 				//	  2. Q selects a random subset of size l of its own neighbours;
@@ -174,9 +173,7 @@ public class BasicShuffle  implements Linkable, EDProtocol, CDProtocol{
 					for (int i = 0; i < l-1 && !cacheCopy.isEmpty(); i++) {
 						int randomNumber = CommonState.r.nextInt(cacheCopy.size());		
 						Entry neighbour = cacheCopy.remove(randomNumber);
-						
 						neighbour.setSentTo(p);
-						
 						subset.add(neighbour);
 					}
 					
@@ -206,10 +203,18 @@ public class BasicShuffle  implements Linkable, EDProtocol, CDProtocol{
 				//	  3. Q is no longer waiting for a shuffle reply;
 					awaitResponse = false;
 					
+					for (Entry entry : cache) {
+						entry.setSentTo(null);
+					}
+					
 					break;
 				
 				// If the message is a shuffle rejection:
 				case SHUFFLE_REJECTED:
+					
+					for (Entry entry : cache) {
+						entry.setSentTo(null);
+					}
 					
 				//	  1. If P was originally removed from Q's cache, add it again to the cache.
 					Entry entry = new Entry(p);
@@ -243,7 +248,7 @@ public class BasicShuffle  implements Linkable, EDProtocol, CDProtocol{
 		}
 		
 		for (Entry neighbour : neighbours) {
-			if (!cache.contains(neighbour) && neighbour.getSentTo()!=node) {
+			if (!cache.contains(neighbour)) {
 				if (cache.size() < size) {
 					cache.add(neighbour);
 				} else if (!toReplaceIndex.isEmpty()) {
