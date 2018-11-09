@@ -2,6 +2,8 @@ Which topology do you think is better to bootstrap
 such a P2P system? 
 The star topology will probably be better to bootstrap such a system as it only depends on one node, in comparison to the ring topology which depends on all nodes in the network.
 
+The star topology will probably be a safer choice when bootstrapping such a system as it makes sure that the participating nodes know about a hub-node which is supposed to be stable (i.e. running all the time); with the ring topology, the nodes will know about more nodes when bootstrapping, but these can be unstable ones, and disconnect before the system has started.
+
 
 What is the importance of the cache size?
 We can see from the graphs that the bigger cache size, the longer it takes to bootstrap the network, with Average path, Clustering coefficient and In-degree distribution taking longer to stabilize with size 50 than with size 30.
